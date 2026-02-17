@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { LayoutDashboard, Grip, ShoppingBasket, Menu, X } from "lucide-react";
 import { LogoutModal } from "../Dialogs/LogoutModal";
 import { useState } from "react";
+import Image from "next/image";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -51,25 +52,30 @@ export function Sidebar() {
       {/* Sidebar */}
       <div
         className={cn(
-          "flex h-screen sticky bottom-0 top-0 flex-col bg-[#212121] z-50 transition-transform duration-300",
+          "flex h-screen sticky bottom-0 top-0 flex-col bg-[#CAE7FF] z-50 transition-transform duration-300",
           // Mobile এ
           "fixed lg:static",
           "w-[280px] sm:w-[300px] lg:w-[350px]",
           // Mobile এ hide/show control
           isMobileMenuOpen
             ? "translate-x-0"
-            : "-translate-x-full lg:translate-x-0"
+            : "-translate-x-full lg:translate-x-0",
         )}
       >
         {/* Header with Logo - Logo সবসময় center এ */}
         <div className="h-[80px] flex items-center justify-center relative px-4">
           <div>
-            <h1 className="text-green-500 text-2xl sm:text-3xl font-bold">
-              Logo
-            </h1>
+            <Image
+              src="/images/logo.png" // 👉 তোমার logo path
+              alt="Logo"
+              width={120}
+              height={40}
+              priority
+              className="object-contain"
+            />
           </div>
 
-          {/* Close Button - absolute position এ top right corner এ */}
+          {/* Close Button */}
           {isMobileMenuOpen && (
             <button
               onClick={toggleMobileMenu}
@@ -96,20 +102,20 @@ export function Sidebar() {
                 className={cn(
                   "flex w-[90%] mx-auto items-center justify-start gap-2 space-y-1 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
                   isActive
-                    ? "bg-white text-black"
-                    : "text-slate-300 hover:bg-slate-600/50 hover:text-white"
+                    ? "bg-[#0024DA] text-white"
+                    : "text-black hover:bg-slate-600/50 hover:text-white",
                 )}
               >
                 <item.icon
                   className={cn(
                     "h-5 w-5 sm:h-6 sm:w-6 transition-colors duration-200 flex-shrink-0",
-                    isActive ? "text-black" : ""
+                    isActive ? "text-white" : "",
                   )}
                 />
                 <span
                   className={cn(
                     "font-normal text-sm sm:text-base leading-[120%] transition-colors duration-200",
-                    isActive ? "text-black font-medium" : ""
+                    isActive ? "text-white font-medium" : "",
                   )}
                 >
                   {item.name}

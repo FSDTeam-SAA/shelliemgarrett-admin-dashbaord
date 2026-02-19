@@ -52,11 +52,8 @@ export function Sidebar() {
       {/* Sidebar */}
       <div
         className={cn(
-          "flex h-screen sticky bottom-0 top-0 flex-col bg-[#CAE7FF] z-50 transition-transform duration-300",
-          // Mobile এ
-          "fixed lg:static",
-          "w-[280px] sm:w-[300px] lg:w-[350px]",
-          // Mobile এ hide/show control
+          "flex h-screen fixed top-0 left-0 flex-col bg-[#CAE7FF] z-50 transition-transform duration-300",
+          "w-[280px] sm:w-[300px] lg:w-[300px]",
           isMobileMenuOpen
             ? "translate-x-0"
             : "-translate-x-full lg:translate-x-0",
@@ -83,7 +80,7 @@ export function Sidebar() {
               aria-label="Close menu"
             >
               <X className="h-6 w-6" />
-            </button> 
+            </button>
           )}
         </div>
 

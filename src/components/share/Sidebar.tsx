@@ -64,7 +64,7 @@ export function Sidebar() {
       >
         {/* Header with Logo - Logo সবসময় center এ */}
         <div className="h-[80px] flex items-center justify-center relative px-4">
-          <div>
+          <div className="mt-5">
             <Image
               src="/images/logo.png" // 👉 তোমার logo path
               alt="Logo"
@@ -83,12 +83,12 @@ export function Sidebar() {
               aria-label="Close menu"
             >
               <X className="h-6 w-6" />
-            </button>
+            </button> 
           )}
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-2 flex flex-col items-center justify-start px-3 overflow-y-auto mt-3">
+        <nav className="flex-1 space-y-2 flex flex-col items-center justify-start px-3 overflow-y-auto mt-7">
           {navigation.map((item) => {
             const isActive =
               pathname === item.href ||
@@ -100,7 +100,7 @@ export function Sidebar() {
                 href={item.href}
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={cn(
-                  "flex w-[90%] mx-auto items-center justify-start gap-2 space-y-1 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+                  "flex w-[97%] mx-auto items-center justify-start gap-2 space-y-1 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200",
                   isActive
                     ? "bg-[#0024DA] text-white"
                     : "text-black hover:bg-slate-600/50 hover:text-white",

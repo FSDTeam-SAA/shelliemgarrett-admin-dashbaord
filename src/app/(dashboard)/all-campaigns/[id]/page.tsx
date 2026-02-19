@@ -1,10 +1,10 @@
 import React from 'react'
-import CampaignDetailsImage from './_components/CampaignDetailsImage'
+// import CampaignDetailsImage from './_components/CampaignDetailsImage'
 
 function page() {
   return (
     <div>
-        <CampaignDetailsImage />
+        {/* <CampaignDetailsImage /> */}
     </div>
   )
 }

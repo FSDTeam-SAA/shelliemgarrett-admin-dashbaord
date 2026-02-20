@@ -10,7 +10,7 @@ function layout({ children }: { children: React.ReactNode }) {
         <Sidebar />
 
         {/* Main Content */}
-        <div className="w-full mt-[80px] p-6 bg-[#EDEEF1] lg:ml-[300px] h-screen">
+        <div className="w-full mt-[80px] p-6 bg-[#EDEEF1] lg:ml-[300px]">
           {children}
         </div>
       </div>

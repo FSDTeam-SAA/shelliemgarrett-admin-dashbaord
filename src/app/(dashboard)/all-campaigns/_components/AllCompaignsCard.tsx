@@ -119,13 +119,13 @@ export function AllCompaignsCard() {
         {campaigns.map((campaign) => (
           <CampaignCard
             key={campaign.id}
+            id={campaign.id.toString()}
             image={campaign.image}
             badge={campaign.badge}
             title={campaign.title}
             description={campaign.description}
             amount={campaign.amount}
             goalAmount={campaign.goalAmount}
-            onViewDetails={() => console.log(`View details: ${campaign.id}`)}
           />
         ))}
       </div>

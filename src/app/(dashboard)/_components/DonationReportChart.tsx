@@ -1,6 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
+import { useQuery } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
+import React, { useState, useMemo } from "react";
 import {
   LineChart,
   Line,
@@ -9,27 +11,115 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from 'recharts';
+} from "recharts";
 
-const data = [
-  { month: 'JAN', thisYear: 25000, lastYear: 15000 },
-  { month: 'FEB', thisYear: 35000, lastYear: 20000 },
-  { month: 'MAR', thisYear: 28000, lastYear: 22000 },
-  { month: 'APR', thisYear: 40000, lastYear: 25000 },
-  { month: 'MAY', thisYear: 32000, lastYear: 28000 },
-  { month: 'JUN', thisYear: 45000, lastYear: 35000 },
-  { month: 'JUL', thisYear: 38000, lastYear: 32000 },
-  { month: 'AUG', thisYear: 42000, lastYear: 38000 },
-  { month: 'SEP', thisYear: 35000, lastYear: 30000 },
-  { month: 'OCT', thisYear: 48000, lastYear: 40000 },
-  { month: 'NOV', thisYear: 40000, lastYear: 35000 },
-  { month: 'DEC', thisYear: 50000, lastYear: 42000 },
-];
+// API response types
+interface YearlyMonthData {
+  year: number;
+  months: Record<
+    "jan" | "feb" | "mar" | "apr" | "may" | "jun" | "jul" | "aug" | "sep" | "oct" | "nov" | "dec",
+    number
+  >;
+}
 
-type TimePeriod = 'Day' | 'Week' | 'Month' | 'Year';
+interface DonationReportResponse {
+  status: boolean;
+  message: string;
+  data: {
+    years: YearlyMonthData[];
+  };
+}
 
 export function DonationReportChart() {
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('Month');
+  const session = useSession();
+  const TOKEN = session?.data?.user?.accessToken;
+
+  const {
+    data: donationReport,
+    isLoading,
+    isError,
+    error,
+  } = useQuery<DonationReportResponse>({
+    queryKey: ["chartData"],
+    queryFn: async () => {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/admin/donations`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${TOKEN}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch donation report");
+      }
+
+      return res.json();
+    },
+    enabled: !!TOKEN,
+  });
+
+  // Select first year by default
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+
+  // Update selectedYear when data loads
+  React.useEffect(() => {
+    if (donationReport?.data?.years?.length) {
+      setSelectedYear(donationReport.data.years[0].year);
+    }
+  }, [donationReport]);
+
+  // Map API response to recharts format based on selected year
+  const chartData = useMemo(() => {
+    if (isLoading || !donationReport?.data?.years?.length || !selectedYear) {
+      return [
+        { month: "JAN", thisYear: 0, lastYear: 0 },
+        { month: "FEB", thisYear: 0, lastYear: 0 },
+        { month: "MAR", thisYear: 0, lastYear: 0 },
+        { month: "APR", thisYear: 0, lastYear: 0 },
+        { month: "MAY", thisYear: 0, lastYear: 0 },
+        { month: "JUN", thisYear: 0, lastYear: 0 },
+        { month: "JUL", thisYear: 0, lastYear: 0 },
+        { month: "AUG", thisYear: 0, lastYear: 0 },
+        { month: "SEP", thisYear: 0, lastYear: 0 },
+        { month: "OCT", thisYear: 0, lastYear: 0 },
+        { month: "NOV", thisYear: 0, lastYear: 0 },
+        { month: "DEC", thisYear: 0, lastYear: 0 },
+      ];
+    }
+
+    const currentYearData = donationReport.data.years.find(
+      (y) => y.year === selectedYear
+    );
+    const previousYearData = donationReport.data.years.find(
+      (y) => y.year === selectedYear! - 1
+    );
+
+    const monthsOrder = [
+      "jan",
+      "feb",
+      "mar",
+      "apr",
+      "may",
+      "jun",
+      "jul",
+      "aug",
+      "sep",
+      "oct",
+      "nov",
+      "dec",
+    ] as const;
+
+    return monthsOrder.map((m) => ({
+      month: m.toUpperCase(),
+      thisYear: currentYearData?.months[m] ?? 0,
+      lastYear: previousYearData?.months[m] ?? 0,
+    }));
+  }, [donationReport, isLoading, selectedYear]);
+
+  if (isError) return <p>Error: {(error as Error).message}</p>;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -46,40 +136,41 @@ export function DonationReportChart() {
           </div>
         </div>
 
+        {/* Year select buttons */}
         <div className="flex gap-2">
-          {(['Day', 'Week', 'Month', 'Year'] as const).map((period) => (
+          {donationReport?.data?.years?.map((y) => (
             <button
-              key={period}
-              onClick={() => setTimePeriod(period)}
+              key={y.year}
+              onClick={() => setSelectedYear(y.year)}
               className={`px-4 py-1 rounded text-sm font-medium transition-colors ${
-                timePeriod === period
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                selectedYear === y.year
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              {period}
+              {y.year}
             </button>
           ))}
         </div>
       </div>
 
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data}>
+        <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis
             dataKey="month"
-            tick={{ fill: '#666', fontSize: 12 }}
-            axisLine={{ stroke: '#e5e7eb' }}
+            tick={{ fill: "#666", fontSize: 12 }}
+            axisLine={{ stroke: "#e5e7eb" }}
           />
           <YAxis
-            tick={{ fill: '#666', fontSize: 12 }}
-            axisLine={{ stroke: '#e5e7eb' }}
+            tick={{ fill: "#666", fontSize: 12 }}
+            axisLine={{ stroke: "#e5e7eb" }}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: '#fff',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
+              backgroundColor: "#fff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "8px",
             }}
           />
           <Line

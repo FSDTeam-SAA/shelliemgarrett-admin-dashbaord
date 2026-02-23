@@ -1,122 +1,53 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 
-const students = [
-  {
-    id: 1,
-    name: "Cameron Williamson",
-    uniqueId: 1140,
-    campaigns: 2,
-    avatar: "/images/carosalImage1.jpg",
-  },
-  {
-    id: 2,
-    name: "Jacob Jones",
-    uniqueId: 1140,
-    campaigns: 1,
-    avatar: "/images/carosalImage2.jpg",
-  },
-  {
-    id: 3,
-    name: "Arlene McCoy",
-    uniqueId: 1140,
-    campaigns: 3,
-    avatar: "/images/carosalImage3.jpg",
-  },
-  {
-    id: 4,
-    name: "Devon Lane",
-    uniqueId: 1140,
-    campaigns: 2,
-    avatar: "/images/carosalImage4.jpg",
-  },
-  {
-    id: 5,
-    name: "Cody Fisher",
-    uniqueId: 1140,
-    campaigns: 1,
-    avatar: "/images/carosalImage5.jpg",
-  },
-  {
-    id: 6,
-    name: "Darrell Steward",
-    uniqueId: 1140,
-    campaigns: 3,
-    avatar: "/images/carosalImage6.jpg",
-  },
-  {
-    id: 7,
-    name: "Leslie Alexander",
-    uniqueId: 1140,
-    campaigns: 3,
-    avatar: "/images/carosalImage1.jpg",
-  },
-  {
-    id: 8,
-    name: "Robert Fox",
-    uniqueId: 1140,
-    campaigns: 2,
-    avatar: "/images/carosalImage2.jpg",
-  },
-  {
-    id: 9,
-    name: "Marvin McKinney",
-    uniqueId: 1140,
-    campaigns: 1,
-    avatar: "/images/carosalImage3.jpg",
-  },
-  {
-    id: 10,
-    name: "Marvin McKinney",
-    uniqueId: 1140,
-    campaigns: 1,
-    avatar: "/images/carosalImage4.jpg",
-  },
-  {
-    id: 11,
-    name: "Marvin McKinney",
-    uniqueId: 1140,
-    campaigns: 1,
-    avatar: "/images/carosalImage5.jpg",
-  },
-  {
-    id: 12,
-    name: "Marvin McKinney",
-    uniqueId: 1140,
-    campaigns: 1,
-    avatar: "/images/carosalImage6.jpg",
-  },
-  {
-    id: 13,
-    name: "Marvin McKinney",
-    uniqueId: 1140,
-    campaigns: 1,
-    avatar: "/images/carosalImage1.jpg",
-  },
-  {
-    id: 14,
-    name: "Marvin McKinney",
-    uniqueId: 1140,
-    campaigns: 1,
-    avatar: "/images/carosalImage2.jpg",
-  },
-  {
-    id: 15,
-    name: "Marvin McKinney",
-    uniqueId: 1140,
-    campaigns: 1,
-    avatar: "/images/carosalImage3.jpg",
-  },
-  {
-    id: 16,
-    name: "Marvin McKinney",
-    uniqueId: 1140,
-    campaigns: 1,
-    avatar: "/images/carosalImage4.jpg",
-  },
-];
+// ── Types ──────────────────────────────────────────────
+interface Campaign {
+  campaignId: string;
+  campaignName: string;
+  campaignDescription: string;
+  campaignGoal: string;
+  campaignTotalRaised: number;
+  userRaisedAmount: number;
+  userStudentId: string;
+  joinedAt: string;
+}
 
+interface Student {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  profileImage: string;
+  isVerified: boolean;
+  createdAt: string;
+  studentId?: string;
+  campaignCount: number;
+  totalRaisedByUser: number;
+  campaigns: Campaign[];
+}
+
+interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+interface ApiResponse {
+  status: boolean;
+  message: string;
+  data: {
+    users: Student[];
+    pagination: Pagination;
+  };
+}
+
+// ── Icons ──────────────────────────────────────────────
 function EyeIcon() {
   return (
     <svg
@@ -188,7 +119,98 @@ function ChevronRight() {
   );
 }
 
+// ── Avatar fallback ────────────────────────────────────
+function StudentAvatar({ src, name }: { src: string; name: string }) {
+  if (src) {
+    return (
+      <div className="relative w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-gray-200">
+        <Image src={src} alt={name} fill className="object-cover" />
+      </div>
+    );
+  }
+  // Initials fallback
+  const initials = name
+    .split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+  return (
+    <div className="w-9 h-9 rounded-full flex-shrink-0 bg-blue-100 flex items-center justify-center">
+      <span className="text-xs font-semibold text-blue-600">{initials}</span>
+    </div>
+  );
+}
+
+// ── Skeleton row ───────────────────────────────────────
+function SkeletonRow() {
+  return (
+    <tr className="border-b border-[#00000014]">
+      <td className="px-5 py-2.5">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-gray-200 animate-pulse flex-shrink-0" />
+          <div className="h-3 w-32 bg-gray-200 animate-pulse rounded" />
+        </div>
+      </td>
+      <td className="px-4 py-2.5 text-center">
+        <div className="h-3 w-16 bg-gray-200 animate-pulse rounded mx-auto" />
+      </td>
+      <td className="px-4 py-2.5 text-center">
+        <div className="h-3 w-8 bg-gray-200 animate-pulse rounded mx-auto" />
+      </td>
+      <td className="px-4 py-2.5 text-center">
+        <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-lg mx-auto" />
+      </td>
+    </tr>
+  );
+}
+
+// ── Main Component ─────────────────────────────────────
 function StudentListPage() {
+  const [page, setPage] = useState(1);
+  const limit = 10;
+  const session = useSession();
+    const TOKEN = session?.data?.user?.accessToken;
+
+  const { data, isLoading, isError } = useQuery<ApiResponse>({
+    queryKey: ["studentList", page],
+    queryFn: async () => {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/admin/studentlist?page=${page}&limit=${limit}`,
+        {
+          headers: {
+            Authorization: `Bearer ${TOKEN}`,
+          },
+        }
+      );
+      if (!res.ok) throw new Error("Failed to fetch students");
+      return res.json();
+    },
+  });
+
+  const students = data?.data?.users ?? [];
+  const pagination = data?.data?.pagination;
+  const totalPages = pagination?.totalPages ?? 1;
+  const total = pagination?.total ?? 0;
+  const from = total === 0 ? 0 : (page - 1) * limit + 1;
+  const to = Math.min(page * limit, total);
+
+  // Build page numbers to show
+  const getPageNumbers = () => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages: (number | "...")[] = [1];
+    if (page > 3) pages.push("...");
+    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) {
+      pages.push(i);
+    }
+    if (page < totalPages - 2) pages.push("...");
+    pages.push(totalPages);
+    return pages;
+  };
+
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -222,95 +244,116 @@ function StudentListPage() {
 
           {/* Body */}
           <tbody>
-            {students.map((student, index) => (
-              <tr
-                key={student.id}
-                className={`hover:bg-gray-50 transition-colors ${
-                  index !== students.length - 1
-                    ? "border-b border-[#00000014]"
-                    : ""
-                }`}
-              >
-                {/* Name + Avatar */}
-                <td className="px-5 py-2.5">
-                  <div className="flex items-center gap-3">
-                    <div className="relative w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-gray-200">
-                      <Image
-                        src={student.avatar}
-                        alt={student.name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <span className="text-sm text-gray-800">
-                      {student.name}
-                    </span>
-                  </div>
-                </td>
-
-                {/* Unique ID */}
-                <td className="px-4 py-2.5 text-center text-sm text-gray-600">
-                  {student.uniqueId}
-                </td>
-
-                {/* Campaign Involvement */}
-                <td className="px-4 py-2.5 text-center text-sm text-gray-600">
-                  {student.campaigns}
-                </td>
-
-                {/* Action */}
-                <td className="px-4 py-2.5 text-center">
-                  <button
-                    aria-label="View"
-                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-[#00000014]  text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer"
-                  >
-                    <EyeIcon />
-                  </button>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+            ) : isError ? (
+              <tr>
+                <td colSpan={4} className="text-center py-10 text-sm text-red-500">
+                  Failed to load students. Please try again.
                 </td>
               </tr>
-            ))}
+            ) : students.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="text-center py-10 text-sm text-gray-400">
+                  No students found.
+                </td>
+              </tr>
+            ) : (
+              students.map((student, index) => (
+                <tr
+                  key={student._id}
+                  className={`hover:bg-gray-50 transition-colors ${
+                    index !== students.length - 1
+                      ? "border-b border-[#00000014]"
+                      : ""
+                  }`}
+                >
+                  {/* Name + Avatar */}
+                  <td className="px-5 py-2.5">
+                    <div className="flex items-center gap-3">
+                      <StudentAvatar
+                        src={student.profileImage}
+                        name={student.name}
+                      />
+                      <span className="text-sm text-gray-800">
+                        {student.name}
+                      </span>
+                    </div>
+                  </td>
+
+                  {/* Unique ID */}
+                  <td className="px-4 py-2.5 text-center text-sm text-gray-600">
+                    {student.studentId ?? "—"}
+                  </td>
+
+                  {/* Campaign Involvement */}
+                  <td className="px-4 py-2.5 text-center text-sm text-gray-600">
+                    {student.campaignCount}
+                  </td>
+
+                  {/* Action */}
+                  <td className="px-4 py-2.5 text-center">
+                    <button
+                      aria-label="View"
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-[#00000014] text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer"
+                    >
+                      <EyeIcon />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
 
-        {/* ===== PAGINATION FOOTER ===== */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100">
-          {/* Showing text */}
-          <p className="text-xs text-gray-500">Showing 1 to 5 of 12 results</p>
+        {/* Pagination Footer */}
+        <div className="flex items-center justify-between px-5 py-3 border-t border-[#00000014]">
+          <p className="text-xs text-gray-500">
+            {total === 0
+              ? "No results"
+              : `Showing ${from} to ${to} of ${total} results`}
+          </p>
 
-          {/* Page buttons */}
           <div className="flex items-center gap-1">
-            {/* Prev arrow */}
-            <button className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white text-gray-400 hover:bg-gray-50 cursor-pointer transition-colors">
+            {/* Prev */}
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white text-gray-400 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+            >
               <ChevronLeft />
             </button>
 
-            {/* Page 1 — active */}
-            <button className="w-7 h-7 flex items-center justify-center rounded text-xs font-semibold bg-blue-600 text-white cursor-pointer">
-              1
-            </button>
+            {/* Page numbers */}
+            {getPageNumbers().map((p, i) =>
+              p === "..." ? (
+                <span
+                  key={`dots-${i}`}
+                  className="w-7 h-7 flex items-center justify-center text-xs text-gray-400 select-none"
+                >
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={p}
+                  onClick={() => setPage(p as number)}
+                  className={`w-7 h-7 flex items-center justify-center rounded text-xs font-semibold cursor-pointer transition-colors ${
+                    page === p
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  {p}
+                </button>
+              )
+            )}
 
-            {/* Page 2 */}
-            <button className="w-7 h-7 flex items-center justify-center rounded text-xs text-gray-600 hover:bg-gray-100 cursor-pointer transition-colors">
-              2
-            </button>
-
-            {/* Page 3 */}
-            <button className="w-7 h-7 flex items-center justify-center rounded text-xs text-gray-600 hover:bg-gray-100 cursor-pointer transition-colors">
-              3
-            </button>
-
-            {/* Dots */}
-            <span className="w-7 h-7 flex items-center justify-center text-xs text-gray-400 select-none">
-              ...
-            </span>
-
-            {/* Last page */}
-            <button className="w-7 h-7 flex items-center justify-center rounded text-xs text-gray-600 hover:bg-gray-100 cursor-pointer transition-colors">
-              8
-            </button>
-
-            {/* Next arrow */}
-            <button className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white text-gray-400 hover:bg-gray-50 cursor-pointer transition-colors">
+            {/* Next */}
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages || totalPages === 0}
+              className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white text-gray-400 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+            >
               <ChevronRight />
             </button>
           </div>

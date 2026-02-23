@@ -1,5 +1,6 @@
-import React from 'react';
-import Image from 'next/image';
+import React from "react";
+import Image from "next/image";
+import Link from "next/link";
 
 interface CampaignCardProps {
   image: string;
@@ -7,6 +8,7 @@ interface CampaignCardProps {
   title: string;
   description: string;
   amount: string;
+  id?: string;
   goalAmount?: string;
   onViewDetails?: () => void;
 }
@@ -17,8 +19,8 @@ export function CampaignCard({
   title,
   description,
   amount,
+  id,
   goalAmount,
-  onViewDetails,
 }: CampaignCardProps) {
   return (
     <div className="bg-white rounded-lg overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
@@ -45,10 +47,7 @@ export function CampaignCard({
 
         <div className="mb-4">
           <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-2">
-            <div
-              className="h-full bg-[#7DBAED]"
-              style={{ width: '45%' }}
-            />
+            <div className="h-full bg-[#7DBAED]" style={{ width: "45%" }} />
           </div>
           <p className="text-sm font-semibold text-gray-900">{amount}</p>
           {goalAmount && (
@@ -56,12 +55,13 @@ export function CampaignCard({
           )}
         </div>
 
-        <button
-          onClick={onViewDetails}
-          className="w-full border-2 border-gray-300 text-gray-900 py-2 rounded-md font-medium hover:bg-gray-50 transition-colors"
-        >
-          View Details
-        </button>
+        <Link href={`/all-campaigns/${id}`}>
+          <button
+            className="w-full border-2 border-gray-300 text-gray-900 py-2 rounded-md font-medium hover:bg-gray-50 transition-colors"
+          >
+            View Details
+          </button>
+        </Link>
       </div>
     </div>
   );

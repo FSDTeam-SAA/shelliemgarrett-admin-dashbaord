@@ -1,6 +1,15 @@
+
+
+
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useRef, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
+import Image from "next/image";
+import { Eye, EyeOff, Pencil, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,14 +26,30 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Pencil } from "lucide-react";
-import Image from "next/image";
 
-interface ProfileData {
+// Assuming these are in a separate file
+import { ProfileHeaderSkeleton } from "./Skleton";
+
+function FormSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-7 gap-y-5">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="flex flex-col gap-1.5">
+          <div className="h-5 w-24 bg-gray-200 rounded animate-pulse" />
+          <div className="h-[48px] w-full bg-gray-200 rounded animate-pulse" />
+        </div>
+      ))}
+      <div className="md:col-span-2 flex flex-col gap-1.5">
+        <div className="h-5 w-20 bg-gray-200 rounded animate-pulse" />
+        <div className="h-[48px] w-full bg-gray-200 rounded animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
+interface ProfileFormData {
   fullName: string;
-  userName: string;
   email: string;
-  phoneNumber: string;
   dateOfBirth: string;
   gender: string;
   address: string;
@@ -32,16 +57,20 @@ interface ProfileData {
 }
 
 export default function UpdatePersonalInfo() {
-  const [profile, setProfile] = useState<ProfileData>({
-    fullName: "Mr. Raja",
-    userName: "raja123",
-    email: "raja123@gmail.com",
-    phoneNumber: "+1 (888) 000-0000",
-    dateOfBirth: "15 April 2001",
-    gender: "Male",
-    address: "00000 Artesia Blvd, Suite A-000",
-    avatar: "/images/profile.jpg",
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken;
+  const queryClient = useQueryClient();
+
+  const [formData, setFormData] = useState<ProfileFormData>({
+    fullName: "",
+    email: "",
+    dateOfBirth: "",
+    gender: "",
+    address: "",
+    avatar: "/images/default-avatar.png",
   });
+
+  const [prevAvatar, setPrevAvatar] = useState<string>(formData.avatar);
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwords, setPasswords] = useState({
@@ -49,200 +78,355 @@ export default function UpdatePersonalInfo() {
     newPass: "",
     confirm: "",
   });
-  const [successMsg, setSuccessMsg] = useState("");
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    newPass: false,
+    confirm: false,
+  });
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleChange = (field: keyof ProfileData, value: string) => {
-    setProfile((prev) => ({ ...prev, [field]: value }));
+  // ─── Fetch current profile ──────────────────────────────────────────────
+  const { isLoading} = useQuery({
+    queryKey: ["userProfile"],
+    queryFn: async () => {
+      if (!token) throw new Error("No authentication token");
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch profile");
+
+      const json = await res.json();
+      if (!json.status || !json.data) throw new Error(json.message || "Invalid response");
+
+      const user = json.data;
+
+      const newFormData = {
+        fullName: user.name || "",
+        email: user.email || "",
+        dateOfBirth: user.dob || "",
+        gender: user.gender ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1) : "",
+        address:
+          [user.address?.roadArea, user.address?.cityState, user.address?.country, user.address?.postalCode]
+            .filter(Boolean)
+            .join(", ") || "",
+        avatar: user.profileImage || "/images/default-avatar.png",
+      };
+
+      setFormData(newFormData);
+      setPrevAvatar(newFormData.avatar);
+      return user;
+    },
+    enabled: !!token,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // ─── Update profile mutation ────────────────────────────────────────────
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: Partial<ProfileFormData>) => {
+      if (!token) throw new Error("No authentication token");
+
+      const payload = {
+        name: data.fullName,
+        dob: data.dateOfBirth,
+        gender: (data.gender || "").toLowerCase(),
+        address: {
+          roadArea: (data.address ?? "").split(", ")[0] || "",
+          cityState: (data.address ?? "").split(", ")[1] || "",
+          country: (data.address ?? "").split(", ")[2] || "",
+          postalCode: (data.address ?? "").split(", ")[3] || "",
+        },
+      };
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user/me`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to update profile");
+      }
+
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Profile updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update profile");
+    },
+  });
+
+  // ─── Change password mutation ───────────────────────────────────────────
+  const changePasswordMutation = useMutation({
+    mutationFn: async (payload: { oldPassword: string; newPassword: string }) => {
+      if (!token) throw new Error("Not authenticated");
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/auth/change-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        let errorMessage = "Failed to change password";
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {}
+        throw new Error(errorMessage);
+      }
+
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Password changed successfully");
+      setShowPasswordModal(false);
+      setPasswords({ current: "", newPass: "", confirm: "" });
+      setShowPasswords({ current: false, newPass: false, confirm: false });
+    },
+    onError: (err) => {
+      toast.error(err.message || "Could not change password. Please try again.");
+    },
+  });
+
+  // ─── Upload avatar mutation ─────────────────────────────────────────────
+  const uploadAvatarMutation = useMutation({
+    mutationFn: async (file: File) => {
+      if (!token) throw new Error("Not authenticated");
+
+      if (!file.type.startsWith("image/")) {
+        throw new Error("Please select an image file (jpg, png, etc.)");
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("Image size should be less than 5MB");
+      }
+
+      const formDataToSend = new FormData();
+      formDataToSend.append("profileImage", file);
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/user/upload-avatar`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formDataToSend,
+      });
+
+      if (!res.ok) {
+        let message = "Failed to upload avatar";
+        try {
+          const err = await res.json();
+          message = err.message || message;
+        } catch {}
+        throw new Error(message);
+      }
+
+      return res.json();
+    },
+
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onSuccess: (response: any) => {
+      const newUrl =
+        response?.data?.profileImage ||
+        response?.data?.avatar ||
+        response?.profileImage ||
+        response?.avatar ||
+        response?.url ||
+        response?.image ||
+        formData.avatar;
+
+      setFormData((prev) => ({ ...prev, avatar: newUrl }));
+      setPrevAvatar(newUrl);
+
+      toast.success("Avatar uploaded successfully");
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+    },
+
+    onError: (err) => {
+      toast.error(err.message || "Avatar upload failed");
+      // Revert preview
+      setFormData((prev) => ({ ...prev, avatar: prevAvatar }));
+    },
+  });
+
+  const handleChange = (field: keyof ProfileFormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setProfile((prev) => ({ ...prev, avatar: url }));
-    }
+    if (!file) return;
+
+    const previewUrl = URL.createObjectURL(file);
+    setPrevAvatar(formData.avatar);           // save old for revert
+    setFormData((prev) => ({ ...prev, avatar: previewUrl }));
+
+    uploadAvatarMutation.mutate(file);
+
+    // Cleanup
+    e.target.value = "";
+    setTimeout(() => URL.revokeObjectURL(previewUrl), 1500);
   };
 
   const handleSubmit = () => {
-    setSuccessMsg("Profile updated successfully!");
-    setTimeout(() => setSuccessMsg(""), 3000);
+    updateProfileMutation.mutate(formData);
   };
 
   const handlePasswordSave = () => {
     if (!passwords.current || !passwords.newPass || !passwords.confirm) {
-      alert("Please fill in all fields.");
+      toast.error("Please fill in all password fields");
       return;
     }
+
     if (passwords.newPass !== passwords.confirm) {
-      alert("New passwords do not match.");
+      toast.error("New password and confirmation do not match");
       return;
     }
-    setShowPasswordModal(false);
-    setPasswords({ current: "", newPass: "", confirm: "" });
-    setSuccessMsg("Password changed successfully!");
-    setTimeout(() => setSuccessMsg(""), 3000);
+
+    if (passwords.newPass.length < 6) {
+      toast.error("New password must be at least 6 characters long");
+      return;
+    }
+
+    changePasswordMutation.mutate({
+      oldPassword: passwords.current,
+      newPassword: passwords.newPass,
+    });
   };
 
-  return (
-    <div className="min-h-screen px-10 py-8">
+  const labelClass = "text-base font-medium text-[#707070]";
+  const inputClass = "h-[48px] rounded-[4px] border-[#0000001A] text-base text-[#272727] placeholder:text-base placeholder:text-[#272727]";
+  const selectClass = "h-[48px] rounded-[4px] border-[#0000001A] text-base text-[#272727] [&>span]:text-base [&>span]:text-[#272727]";
 
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 text-[13px] text-gray-400 mb-1">
-        <span className="text-gray-500 cursor-pointer hover:text-blue-600 transition-colors">
+  return (
+    <div className="min-h-screen px-2 py-8">
+      <h1 className="text-[24px] font-semibold text-[#272727] mb-2 mt-0">Setting</h1>
+
+      <div className="flex items-center gap-1.5 text-[13px] text-gray-400 mb-6">
+        <span className="text-[#595959] text-base cursor-pointer hover:text-[#595959]/90 transition-colors">
           Dashboard
         </span>
-        <span className="text-gray-300">›</span>
-        <span className="text-gray-600 font-medium">Setting</span>
+        <span className="text-[#595959] text-base">›</span>
+        <span className="text-[#595959] text-base font-medium">Setting</span>
       </div>
 
-      <h1 className="text-[22px] font-bold text-gray-900 mb-6 mt-0">Setting</h1>
+      {isLoading ? (
+        <ProfileHeaderSkeleton />
+      ) : (
+        <div className="rounded-xl px-7 py-5 flex items-center justify-between mb-6 flex-wrap gap-4">
+          <div className="flex items-center gap-4">
+            <div className="relative w-[120px] h-[120px] shrink-0">
+              <Image
+                width={120}
+                height={120}
+                src={formData.avatar}
+                alt="Profile"
+                className="w-[120px] h-[120px] rounded-full object-cover border-2 border-gray-200"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadAvatarMutation.isPending}
+                className="absolute bottom-0 right-0 w-7 h-7 bg-blue-600 hover:bg-blue-700 border-2 border-white rounded-full flex items-center justify-center transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                title="Change photo"
+              >
+                {uploadAvatarMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 text-white animate-spin" />
+                ) : (
+                  <Pencil className="w-[10px] h-[10px] text-white" />
+                )}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+            </div>
 
-      {/* Success Message */}
-      {successMsg && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg px-4 py-3 text-sm font-medium mb-5">
-          ✓ {successMsg}
+            <div>
+              <p className="font-bold text-[20px] text-[#131313] leading-tight">
+                {formData.fullName || "User"}
+              </p>
+              <p className="text-[16px] text-[#616161] mt-0.5">@{formData.email.split("@")[0] || "user"}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              className="border-[#595959] text-[#595959] hover:bg-transparent bg-transparent medium text-base h-[43px] px-5"
+              onClick={() => setShowPasswordModal(true)}
+            >
+              Change Password
+            </Button>
+            <Button
+              disabled={updateProfileMutation.isPending}
+              onClick={handleSubmit}
+              className="bg-[#0024DA] hover:bg-[#0024DA]/90 text-white font-semibold text-base h-[43px] px-5 flex items-center gap-2"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              {updateProfileMutation.isPending ? "Saving..." : "Update Profile"}
+            </Button>
+          </div>
         </div>
       )}
 
-      {/* Profile Header Card */}
-      <div className="bg-white rounded-xl px-7 py-5 flex items-center justify-between mb-6 shadow-sm flex-wrap gap-4">
-
-        {/* Left: Avatar + Name */}
-        <div className="flex items-center gap-4">
-          <div className="relative w-[68px] h-[68px] shrink-0">
-            <Image
-            width={300}
-            height={300}
-              src={profile.avatar}
-              alt="avatar"
-              className="w-[68px] h-[68px] rounded-full object-cover border-2 border-gray-200"
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="absolute bottom-0 right-0 w-6 h-6 bg-blue-600 hover:bg-blue-700 border-2 border-white rounded-full flex items-center justify-center transition-colors cursor-pointer"
-              title="Change photo"
-            >
-              <Pencil className="w-[10px] h-[10px] text-white" />
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarChange}
-            />
-          </div>
-
-          <div>
-            <p className="font-bold text-[17px] text-gray-900 leading-tight">
-              {profile.fullName}
-            </p>
-            <p className="text-[13px] text-gray-400 mt-0.5">
-              @{profile.userName}
-            </p>
-          </div>
-        </div>
-
-        {/* Right: Buttons */}
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            className="border-gray-300 text-gray-700 hover:bg-gray-50 font-medium text-sm h-[38px] px-5"
-            onClick={() => setShowPasswordModal(true)}
-          >
-            Change Password
-          </Button>
-          <Button
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm h-[38px] px-5 flex items-center gap-2"
-            onClick={handleSubmit}
-          >
-            <Pencil className="w-3.5 h-3.5" />
-            Update Profile
-          </Button>
-        </div>
-      </div>
-
-      {/* Form Card */}
-      <div className="bg-white rounded-xl p-7 shadow-sm">
+      {isLoading ? (
+        <FormSkeleton />
+      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-7 gap-y-5">
-
           {/* Full Name */}
           <div className="flex flex-col gap-1.5">
-            <Label className="text-[13px] font-medium text-gray-600">
-              Full Name
-            </Label>
+            <Label className={labelClass}>Full Name</Label>
             <Input
-              value={profile.fullName}
+              value={formData.fullName}
               onChange={(e) => handleChange("fullName", e.target.value)}
-              placeholder="Enter full name"
-              className="border-gray-200 focus-visible:ring-blue-500 focus-visible:border-blue-400 text-gray-800 text-sm h-[44px]"
+              className={inputClass}
             />
           </div>
 
-          {/* User Name */}
+          {/* Email (read-only) */}
           <div className="flex flex-col gap-1.5">
-            <Label className="text-[13px] font-medium text-gray-600">
-              User Name
-            </Label>
-            <Input
-              value={profile.userName}
-              onChange={(e) => handleChange("userName", e.target.value)}
-              placeholder="Enter username"
-              className="border-gray-200 focus-visible:ring-blue-500 focus-visible:border-blue-400 text-gray-800 text-sm h-[44px]"
-            />
-          </div>
-
-          {/* Email */}
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-[13px] font-medium text-gray-600">
-              Email
-            </Label>
+            <Label className={labelClass}>Email</Label>
             <Input
               type="email"
-              value={profile.email}
-              onChange={(e) => handleChange("email", e.target.value)}
-              placeholder="Enter email"
-              className="border-gray-200 focus-visible:ring-blue-500 focus-visible:border-blue-400 text-gray-800 text-sm h-[44px]"
-            />
-          </div>
-
-          {/* Phone Number */}
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-[13px] font-medium text-gray-600">
-              Phone Number
-            </Label>
-            <Input
-              value={profile.phoneNumber}
-              onChange={(e) => handleChange("phoneNumber", e.target.value)}
-              placeholder="+1 (000) 000-0000"
-              className="border-gray-200 focus-visible:ring-blue-500 focus-visible:border-blue-400 text-gray-800 text-sm h-[44px]"
+              value={formData.email}
+              disabled
+              className={`${inputClass} bg-gray-50 cursor-not-allowed`}
             />
           </div>
 
           {/* Date of Birth */}
           <div className="flex flex-col gap-1.5">
-            <Label className="text-[13px] font-medium text-gray-600">
-              date of Birth
-            </Label>
+            <Label className={labelClass}>Date of Birth</Label>
             <Input
-              value={profile.dateOfBirth}
+              value={formData.dateOfBirth}
               onChange={(e) => handleChange("dateOfBirth", e.target.value)}
-              placeholder="DD Month YYYY"
-              className="border-gray-200 focus-visible:ring-blue-500 focus-visible:border-blue-400 text-gray-800 text-sm h-[44px]"
+              placeholder="YYYY-MM-DD"
+              className={inputClass}
             />
           </div>
 
           {/* Gender */}
           <div className="flex flex-col gap-1.5">
-            <Label className="text-[13px] font-medium text-gray-600">
-              Gender
-            </Label>
-            <Select
-              value={profile.gender}
-              onValueChange={(val) => handleChange("gender", val)}
-            >
-              <SelectTrigger className="border-gray-200 focus:ring-blue-500 text-gray-800 text-sm h-[44px]">
+            <Label className={labelClass}>Gender</Label>
+            <Select value={formData.gender} onValueChange={(val) => handleChange("gender", val)}>
+              <SelectTrigger className={selectClass}>
                 <SelectValue placeholder="Select gender" />
               </SelectTrigger>
               <SelectContent>
@@ -253,89 +437,109 @@ export default function UpdatePersonalInfo() {
             </Select>
           </div>
 
-          {/* Address — full width */}
+          {/* Address */}
           <div className="flex flex-col gap-1.5 md:col-span-2">
-            <Label className="text-[13px] font-medium text-gray-600">
-              Address
-            </Label>
+            <Label className={labelClass}>Address</Label>
             <Input
-              value={profile.address}
+              value={formData.address}
               onChange={(e) => handleChange("address", e.target.value)}
-              placeholder="Enter your address"
-              className="border-gray-200 focus-visible:ring-blue-500 focus-visible:border-blue-400 text-gray-800 text-sm h-[44px]"
+              placeholder="Enter your full address"
+              className={inputClass}
             />
           </div>
         </div>
-      </div>
+      )}
 
       {/* Change Password Dialog */}
-      <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>
+      <Dialog
+        open={showPasswordModal}
+        onOpenChange={(open) => {
+          setShowPasswordModal(open);
+          if (!open) {
+            setShowPasswords({ current: false, newPass: false, confirm: false });
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[440px] p-7">
           <DialogHeader>
-            <DialogTitle className="text-[18px] font-bold text-gray-900">
-              Change Password
-            </DialogTitle>
+            <DialogTitle className="text-[18px] font-bold text-gray-900">Change Password</DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-col gap-4 mt-1">
+          <div className="flex flex-col gap-4 mt-4">
             <div className="flex flex-col gap-1.5">
-              <Label className="text-[13px] font-medium text-gray-600">
-                Current Password
-              </Label>
-              <Input
-                type="password"
-                placeholder="••••••••"
-                value={passwords.current}
-                onChange={(e) =>
-                  setPasswords((p) => ({ ...p, current: e.target.value }))
-                }
-                className="border-gray-200 focus-visible:ring-blue-500 text-sm h-[44px]"
-              />
+              <Label className={labelClass}>Current Password</Label>
+              <div className="relative">
+                <Input
+                  type={showPasswords.current ? "text" : "password"}
+                  value={passwords.current}
+                  onChange={(e) => setPasswords((p) => ({ ...p, current: e.target.value }))}
+                  className={`${inputClass} pr-10`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPasswords((prev) => ({ ...prev, current: !prev.current }))}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#707070] hover:text-[#272727]"
+                  aria-label={showPasswords.current ? "Hide" : "Show"} 
+                >
+                  {showPasswords.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label className="text-[13px] font-medium text-gray-600">
-                New Password
-              </Label>
-              <Input
-                type="password"
-                placeholder="••••••••"
-                value={passwords.newPass}
-                onChange={(e) =>
-                  setPasswords((p) => ({ ...p, newPass: e.target.value }))
-                }
-                className="border-gray-200 focus-visible:ring-blue-500 text-sm h-[44px]"
-              />
+              <Label className={labelClass}>New Password</Label>
+              <div className="relative">
+                <Input
+                  type={showPasswords.newPass ? "text" : "password"}
+                  value={passwords.newPass}
+                  onChange={(e) => setPasswords((p) => ({ ...p, newPass: e.target.value }))}
+                  className={`${inputClass} pr-10`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPasswords((prev) => ({ ...prev, newPass: !prev.newPass }))}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#707070] hover:text-[#272727]"
+                  aria-label={showPasswords.newPass ? "Hide" : "Show"}
+                >
+                  {showPasswords.newPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label className="text-[13px] font-medium text-gray-600">
-                Confirm New Password
-              </Label>
-              <Input
-                type="password"
-                placeholder="••••••••"
-                value={passwords.confirm}
-                onChange={(e) =>
-                  setPasswords((p) => ({ ...p, confirm: e.target.value }))
-                }
-                className="border-gray-200 focus-visible:ring-blue-500 text-sm h-[44px]"
-              />
+              <Label className={labelClass}>Confirm New Password</Label>
+              <div className="relative">
+                <Input
+                  type={showPasswords.confirm ? "text" : "password"}
+                  value={passwords.confirm}
+                  onChange={(e) => setPasswords((p) => ({ ...p, confirm: e.target.value }))}
+                  className={`${inputClass} pr-10`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPasswords((prev) => ({ ...prev, confirm: !prev.confirm }))}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#707070] hover:text-[#272727]"
+                  aria-label={showPasswords.confirm ? "Hide" : "Show"}
+                >
+                  {showPasswords.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-1">
+            <div className="flex justify-end gap-3 mt-6">
               <Button
                 variant="outline"
-                className="border-gray-300 text-gray-700 font-medium text-sm"
                 onClick={() => setShowPasswordModal(false)}
+                disabled={changePasswordMutation.isPending}
               >
                 Cancel
               </Button>
               <Button
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm"
                 onClick={handlePasswordSave}
+                disabled={changePasswordMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700 text-white min-w-[140px]"
               >
-                Save Password
+                {changePasswordMutation.isPending ? "Changing..." : "Save Password"}
               </Button>
             </div>
           </div>

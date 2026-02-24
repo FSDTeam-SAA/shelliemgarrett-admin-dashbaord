@@ -56,9 +56,9 @@ export function AllCompaignsCard() {
     <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-gray-900">All Campaigns</h2>
-        <button className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+        {/* <button className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
           See all
-        </button>
+        </button> */}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -66,7 +66,7 @@ export function AllCompaignsCard() {
           <CampaignCard
             key={campaign._id}
             id={campaign._id}
-            image={campaign.media[0]?.url || ""}
+            image={campaign.media[0]?.url || "/images/allcompanigeImage.png"}
             title={campaign.name}
             description={campaign.description}
             amount={campaign.totalRaised.toString()}

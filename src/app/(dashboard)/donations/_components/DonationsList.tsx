@@ -174,7 +174,7 @@ export default function DonationsList() {
     <div className="min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-center relative mb-5">
-        <h1 className="text-2xl font-bold text-gray-900">Donations</h1>
+        <h1 className="text-center text-[48px] font-medium leading-[150%] my-8">Donations</h1>
         {/* <button className="absolute right-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer">
           Save <SaveIcon />
         </button> */}
@@ -276,7 +276,7 @@ export default function DonationsList() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="w-10 h-10 flex items-center justify-center border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-sm"
+              className="w-10 h-10 flex items-center justify-center rounded border border-gray-200 bg-[#A8A8A8] text-black hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
             >
               <ChevronLeft />
             </button>
@@ -294,7 +294,7 @@ export default function DonationsList() {
                 <button
                   key={p}
                   onClick={() => setPage(p as number)}
-                  className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-semibold cursor-pointer transition-all ${
+                  className={`w-10 h-10 flex items-center justify-center text-sm font-semibold cursor-pointer transition-all ${
                     currentPage === p
                       ? "bg-blue-600 text-white shadow-md shadow-blue-200"
                       : "text-gray-600 border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 shadow-sm"
@@ -309,7 +309,7 @@ export default function DonationsList() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages || totalPages === 0}
-              className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-sm"
+              className="w-10 h-10 flex items-center justify-center rounded border border-gray-200 bg-[#A8A8A8] text-black hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
             >
               <ChevronRight />
             </button>

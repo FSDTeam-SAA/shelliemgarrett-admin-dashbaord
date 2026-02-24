@@ -66,25 +66,6 @@ function EyeIcon() {
   );
 }
 
-function SaveIcon() {
-  return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-      <polyline points="17 21 17 13 7 13 7 21" />
-      <polyline points="7 3 7 8 15 8" />
-    </svg>
-  );
-}
-
 function ChevronLeft() {
   return (
     <svg
@@ -213,10 +194,10 @@ function StudentListPage() {
     <div className="min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-center relative mb-5">
-        <h1 className="text-2xl font-bold text-gray-900">Student List</h1>
-        <button className="absolute right-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer">
+        <h1 className="text-center text-[48px] font-medium leading-[150%] my-8">Student List</h1>
+        {/* <button className="absolute right-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer">
           Save <SaveIcon />
-        </button>
+        </button> */}
       </div>
 
       {/* Table Card */}

@@ -73,6 +73,7 @@ export function AllCampaign() {
         {campaigns.map((campaign) => (
           <CampaignCard
             key={campaign._id}
+            id={campaign?._id}
             image={campaign.media?.[0]?.url ?? "/images/allcompanigeImage.png"} // fallback image
             badge="" // optionally add badge logic
             title={campaign.name}

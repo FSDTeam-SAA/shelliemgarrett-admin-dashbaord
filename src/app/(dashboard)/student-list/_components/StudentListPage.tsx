@@ -66,25 +66,6 @@ function EyeIcon() {
   );
 }
 
-function SaveIcon() {
-  return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-      <polyline points="17 21 17 13 7 13 7 21" />
-      <polyline points="7 3 7 8 15 8" />
-    </svg>
-  );
-}
-
 function ChevronLeft() {
   return (
     <svg
@@ -123,12 +104,11 @@ function ChevronRight() {
 function StudentAvatar({ src, name }: { src: string; name: string }) {
   if (src) {
     return (
-      <div className="relative w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-gray-200">
+      <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-200">
         <Image src={src} alt={name} fill className="object-cover" />
       </div>
     );
   }
-  // Initials fallback
   const initials = name
     .split(" ")
     .map((n) => n[0])
@@ -137,8 +117,8 @@ function StudentAvatar({ src, name }: { src: string; name: string }) {
     .toUpperCase();
 
   return (
-    <div className="w-9 h-9 rounded-full flex-shrink-0 bg-blue-100 flex items-center justify-center">
-      <span className="text-xs font-semibold text-blue-600">{initials}</span>
+    <div className="w-10 h-10 rounded-full flex-shrink-0 bg-blue-100 flex items-center justify-center">
+      <span className="text-sm font-semibold text-blue-600">{initials}</span>
     </div>
   );
 }
@@ -147,20 +127,20 @@ function StudentAvatar({ src, name }: { src: string; name: string }) {
 function SkeletonRow() {
   return (
     <tr className="border-b border-[#00000014]">
-      <td className="px-5 py-2.5">
+      <td className="px-5 py-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gray-200 animate-pulse flex-shrink-0" />
-          <div className="h-3 w-32 bg-gray-200 animate-pulse rounded" />
+          <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse flex-shrink-0" />
+          <div className="h-3.5 w-36 bg-gray-200 animate-pulse rounded" />
         </div>
       </td>
-      <td className="px-4 py-2.5 text-center">
-        <div className="h-3 w-16 bg-gray-200 animate-pulse rounded mx-auto" />
+      <td className="px-4 py-4 text-center">
+        <div className="h-3.5 w-20 bg-gray-200 animate-pulse rounded mx-auto" />
       </td>
-      <td className="px-4 py-2.5 text-center">
-        <div className="h-3 w-8 bg-gray-200 animate-pulse rounded mx-auto" />
+      <td className="px-4 py-4 text-center">
+        <div className="h-3.5 w-8 bg-gray-200 animate-pulse rounded mx-auto" />
       </td>
-      <td className="px-4 py-2.5 text-center">
-        <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-lg mx-auto" />
+      <td className="px-4 py-4 text-center">
+        <div className="w-9 h-9 bg-gray-200 animate-pulse rounded-lg mx-auto" />
       </td>
     </tr>
   );
@@ -171,7 +151,7 @@ function StudentListPage() {
   const [page, setPage] = useState(1);
   const limit = 10;
   const session = useSession();
-    const TOKEN = session?.data?.user?.accessToken;
+  const TOKEN = session?.data?.user?.accessToken;
 
   const { data, isLoading, isError } = useQuery<ApiResponse>({
     queryKey: ["studentList", page],
@@ -196,7 +176,6 @@ function StudentListPage() {
   const from = total === 0 ? 0 : (page - 1) * limit + 1;
   const to = Math.min(page * limit, total);
 
-  // Build page numbers to show
   const getPageNumbers = () => {
     if (totalPages <= 5) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -215,10 +194,10 @@ function StudentListPage() {
     <div className="min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-center relative mb-5">
-        <h1 className="text-2xl font-bold text-gray-900">Student List</h1>
-        <button className="absolute right-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer">
+        <h1 className="text-center text-[48px] font-medium leading-[150%] my-8">Student List</h1>
+        {/* <button className="absolute right-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer">
           Save <SaveIcon />
-        </button>
+        </button> */}
       </div>
 
       {/* Table Card */}
@@ -227,16 +206,16 @@ function StudentListPage() {
           {/* Head */}
           <thead>
             <tr className="border-b border-[#00000014]">
-              <th className="text-left text-xs font-medium text-gray-500 px-5 py-3 w-[42%]">
+              <th className="text-left text-sm font-semibold text-gray-600 px-5 py-4 w-[42%]">
                 Student Name
               </th>
-              <th className="text-center text-xs font-medium text-gray-500 px-4 py-3 w-[20%]">
+              <th className="text-center text-sm font-semibold text-gray-600 px-4 py-4 w-[20%]">
                 Unique ID
               </th>
-              <th className="text-center text-xs font-medium text-gray-500 px-4 py-3 w-[23%]">
+              <th className="text-center text-sm font-semibold text-gray-600 px-4 py-4 w-[23%]">
                 Campaign Involvement
               </th>
-              <th className="text-center text-xs font-medium text-gray-500 px-4 py-3 w-[15%]">
+              <th className="text-center text-sm font-semibold text-gray-600 px-4 py-4 w-[15%]">
                 Action
               </th>
             </tr>
@@ -248,13 +227,13 @@ function StudentListPage() {
               Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
             ) : isError ? (
               <tr>
-                <td colSpan={4} className="text-center py-10 text-sm text-red-500">
+                <td colSpan={4} className="text-center py-12 text-base text-red-500">
                   Failed to load students. Please try again.
                 </td>
               </tr>
             ) : students.length === 0 ? (
               <tr>
-                <td colSpan={4} className="text-center py-10 text-sm text-gray-400">
+                <td colSpan={4} className="text-center py-12 text-base text-gray-400">
                   No students found.
                 </td>
               </tr>
@@ -269,33 +248,33 @@ function StudentListPage() {
                   }`}
                 >
                   {/* Name + Avatar */}
-                  <td className="px-5 py-2.5">
+                  <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <StudentAvatar
                         src={student.profileImage}
                         name={student.name}
                       />
-                      <span className="text-sm text-gray-800">
+                      <span className="text-base text-gray-800 font-medium">
                         {student.name}
                       </span>
                     </div>
                   </td>
 
                   {/* Unique ID */}
-                  <td className="px-4 py-2.5 text-center text-sm text-gray-600">
+                  <td className="px-4 py-4 text-center text-base text-gray-600">
                     {student.studentId ?? "—"}
                   </td>
 
                   {/* Campaign Involvement */}
-                  <td className="px-4 py-2.5 text-center text-sm text-gray-600">
+                  <td className="px-4 py-4 text-center text-base text-gray-600">
                     {student.campaignCount}
                   </td>
 
                   {/* Action */}
-                  <td className="px-4 py-2.5 text-center">
+                  <td className="px-4 py-4 text-center">
                     <button
                       aria-label="View"
-                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-[#00000014] text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer"
+                      className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-[#00000014] text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer"
                     >
                       <EyeIcon />
                     </button>
@@ -307,8 +286,8 @@ function StudentListPage() {
         </table>
 
         {/* Pagination Footer */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-[#00000014]">
-          <p className="text-xs text-gray-500">
+        <div className="flex items-center justify-between px-5 py-3.5 border-t border-[#00000014]">
+          <p className="text-sm text-gray-500">
             {total === 0
               ? "No results"
               : `Showing ${from} to ${to} of ${total} results`}
@@ -319,7 +298,7 @@ function StudentListPage() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white text-gray-400 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              className="w-10 h-10 flex items-center justify-center rounded border border-gray-200 text-black hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors bg-[#A8A8A8]"
             >
               <ChevronLeft />
             </button>
@@ -337,7 +316,7 @@ function StudentListPage() {
                 <button
                   key={p}
                   onClick={() => setPage(p as number)}
-                  className={`w-7 h-7 flex items-center justify-center rounded text-xs font-semibold cursor-pointer transition-colors ${
+                  className={`w-10 h-10 flex items-center justify-center rounded text-xs font-semibold cursor-pointer transition-colors ${
                     page === p
                       ? "bg-blue-600 text-white"
                       : "text-gray-600 hover:bg-gray-100"
@@ -352,7 +331,7 @@ function StudentListPage() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages || totalPages === 0}
-              className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white text-gray-400 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              className="w-10 h-10 flex items-center justify-center rounded border border-gray-200 bg-[#A8A8A8] text-black hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
             >
               <ChevronRight />
             </button>

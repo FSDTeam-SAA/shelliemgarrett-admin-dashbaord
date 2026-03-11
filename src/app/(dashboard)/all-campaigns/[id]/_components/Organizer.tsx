@@ -80,7 +80,7 @@ function Organizer({ campaign }: Props) {
         {/* ===== STUDENT DONORS ===== */}
         <section>
           <h2 className="text-[48px] font-bold text-gray-900 leading-[150%] mb-3">
-            Student Donors ({studentDonors.length})
+            Student({studentDonors.length})
           </h2>
           <div className="space-y-6">
             {studentDonors.length === 0 ? (

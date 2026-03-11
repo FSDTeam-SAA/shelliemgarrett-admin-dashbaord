@@ -90,8 +90,11 @@ export function TopDonors() {
                   donor.donor.name,
                 )}&background=random`}
                 onViewProfile={() =>
-                  console.log(`View profile: ${donor.donor.name}`)
+                  
+                console.log(`View profile: ${donor.donor.name}`)
                 }
+
+                email = {donor?.donor?.email}
               />
             ))}
       </div>

@@ -146,7 +146,7 @@ function SignInForm() {
             </button>
 
             {/* Sign Up Link */}
-            <div className="text-center text-sm text-gray-600">
+            {/* <div className="text-center text-sm text-gray-600">
               Don&apos;t have an account?{" "}
               <a
                 href="#"
@@ -154,7 +154,7 @@ function SignInForm() {
               >
                 Sign Up
               </a>
-            </div>
+            </div> */}
           </form>
         </div>
       </div>

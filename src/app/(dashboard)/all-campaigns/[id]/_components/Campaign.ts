@@ -1,17 +1,3 @@
-export interface MediaItem {
-  url: string;
-  public_id: string;
-  _id: string;
-}
-
-export interface Student {
-  studentId: string;
-  name: string;
-  email: string;
-  others: Record<string, string>;
-  raisedAmount: number;
-}
-
 export interface Donor {
   name: string;
   email: string;
@@ -22,29 +8,33 @@ export interface Donor {
 
 export interface Donation {
   _id: string;
-  studentId: string;
+  studentId: string | null;
   donor: Donor;
   amount: number;
   createdAt: string;
-}
-
-export interface CreatedBy {
-  _id: string;
-  name: string;
-  email: string;
-  role: string;
 }
 
 export interface Campaign {
   _id: string;
   name: string;
   description: string;
-  media: MediaItem[];
+  media: { url: string }[];
+  students: {
+    studentId: string;
+    name: string;
+    email: string;
+    raisedAmount: number;
+  }[];
   totalRaised: number;
   raiseGoal: string;
-  createdBy: CreatedBy;
-  students: Student[];
-  donations: Donation[];
+  createdBy: {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
   createdAt: string;
   updatedAt: string;
+  studentDonations: Donation[];
+  guestDonations: Donation[];
 }

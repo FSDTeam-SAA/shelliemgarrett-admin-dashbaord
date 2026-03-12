@@ -10,6 +10,7 @@ import { Send, Upload, ImagePlus, X, Loader2, FileText, FileSpreadsheet, File } 
 import Image from "next/image";
 import { useMutation } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 // Helper: pick icon based on file extension
 function FilePreviewIcon({ file }: { file: File }) {
@@ -153,7 +154,7 @@ export default function AddCampaign() {
       return res.json();
     },
     onSuccess: () => {
-      alert("Campaign published successfully!");
+      toast.success("Campaign published successfully!");
       setCampaignName("");
       setDescription("");
       setRaisedGoals("");
@@ -162,17 +163,17 @@ export default function AddCampaign() {
       setCampaignPhotos([]);
     },
     onError: (error: Error) => {
-      alert(`Failed to publish campaign: ${error.message}`);
+      toast.error(`Failed to publish campaign: ${error.message}`);
     },
   });
 
   const handlePublish = () => {
     if (!campaignName.trim()) {
-      alert("Please enter a campaign name.");
+      toast.warning("Please enter a campaign name.");
       return;
     }
     if (!raisedGoals || Number(raisedGoals) <= 0) {
-      alert("Please enter a valid raised goal amount.");
+      toast.warning("Please enter a valid raised goal amount.");
       return;
     }
     createMutation.mutate();

@@ -4,12 +4,13 @@ import React from "react";
 
 interface DonerCardProps {
   name: string;
+  email: string;
   amount: string;
   avatar?: string; // optional
   onViewProfile?: () => void;
 }
 
-export function DonerCard({ name, amount, avatar, onViewProfile }: DonerCardProps) {
+export function DonerCard({ name,email, amount, avatar, onViewProfile }: DonerCardProps) {
   const initials = name
     .split(" ")
     .slice(0, 2)
@@ -32,9 +33,9 @@ export function DonerCard({ name, amount, avatar, onViewProfile }: DonerCardProp
         <p className="text-xl font-normal text-[#000000]">Donated {amount}</p>
         <button
           onClick={onViewProfile}
-          className="text-[#0024DA] text-xl font-medium hover:text-[#0024DA]/90 mt-1"
+          className="text-[#0024DA] text-md font-medium hover:text-[#0024DA]/90 mt-1"
         >
-          View Profile
+          {email}
         </button>
       </div>
     </div>

@@ -3,37 +3,20 @@
 import { DonerCard } from "@/components/share/DonerCard";
 import { useQuery } from "@tanstack/react-query";
 import React from "react";
-import { Skeleton } from "@/components/ui/skeleton"; // ShadCN skeleton
+import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "next-auth/react";
 
-// API types
-interface Donor {
+interface TopDonor {
   name: string;
   email: string;
-  mobile: string;
-  country: string;
-  city: string;
-}
-
-interface Donation {
-  _id: string;
-  donor: Donor;
-  amount: number;
-  paymentStatus: string;
-  createdAt: string;
+  totalAmount: number;
 }
 
 interface DonationResponse {
   status: boolean;
   message: string;
   data: {
-    donations: Donation[];
-    pagination: {
-      total: number;
-      page: number;
-      limit: number;
-      totalPages: number;
-    };
+    topDonors: TopDonor[];
   };
 }
 
@@ -45,23 +28,27 @@ export function TopDonors() {
     queryKey: ["donationData"],
     queryFn: async () => {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/donation`,
+        `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/admin/stats`,
         {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${TOKEN}`,
           },
-        },
+        }
       );
+
       if (!res.ok) throw new Error("Failed to fetch donation data");
+
       return res.json();
     },
+    enabled: !!TOKEN,
   });
 
   if (isError)
     return <p className="text-red-500">Error: {(error as Error).message}</p>;
 
-  const donations = data?.data?.donations?.slice(0, 3) ?? []; // top 3 donors
+  // ✅ only topDonors
+  const donors = data?.data?.topDonors ?? [];
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm my-10">
@@ -81,20 +68,18 @@ export function TopDonors() {
                 </div>
               </div>
             ))
-          : donations.map((donor) => (
+          : donors.map((donor, index) => (
               <DonerCard
-                key={donor._id}
-                name={donor.donor.name}
-                amount={`$${donor.amount}`}
+                key={index}
+                name={donor.name}
+                email={donor.email}
+                amount={`$${donor.totalAmount}`}
                 avatar={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  donor.donor.name,
+                  donor.name
                 )}&background=random`}
                 onViewProfile={() =>
-                  
-                console.log(`View profile: ${donor.donor.name}`)
+                  console.log(`View profile: ${donor.name}`)
                 }
-
-                email = {donor?.donor?.email}
               />
             ))}
       </div>

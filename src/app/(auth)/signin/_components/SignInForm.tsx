@@ -6,6 +6,7 @@ import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import authImage from "@/../../public/images/signinImage.svg"
 
 function SignInForm() {
   const router = useRouter();
@@ -164,7 +165,7 @@ function SignInForm() {
         <Image
           width={400}
           height={400}
-          src="/images/signinImage.svg"
+          src={authImage}
           alt="Food distribution"
           className="absolute inset-0 w-full h-full object-contain"
         />

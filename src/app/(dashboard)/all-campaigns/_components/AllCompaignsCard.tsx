@@ -1,6 +1,7 @@
 "use client";
 
 import { CampaignCard } from "@/components/share/CampaignCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import React from "react";
@@ -47,7 +48,6 @@ export function AllCompaignsCard() {
     enabled: !!TOKEN,
   });
 
-  if (isLoading) return <p>Loading campaigns...</p>;
   if (isError) return <p className="text-red-500">Error: {(error as Error).message}</p>;
 
   const campaigns = allCom?.data?.campaigns ?? [];
@@ -56,23 +56,39 @@ export function AllCompaignsCard() {
     <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-gray-900">All Campaigns</h2>
-        {/* <button className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-          See all
-        </button> */}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {campaigns.map((campaign) => (
-          <CampaignCard
-            key={campaign._id}
-            id={campaign._id}
-            image={campaign.media[0]?.url || "/images/allcompanigeImage.png"}
-            title={campaign.name}
-            description={campaign.description}
-            amount={campaign.totalRaised.toString()}
-            goalAmount={campaign.raiseGoal}
-          />
-        ))}
+        {isLoading
+          ? // ─── Skeleton Cards ───────────────────────────────────
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-3 rounded-lg overflow-hidden border border-gray-200 bg-white p-4">
+                {/* Image skeleton */}
+                <Skeleton className="h-[180px] w-full rounded-md" />
+                {/* Title skeleton */}
+                <Skeleton className="h-5 w-3/4" />
+                {/* Description skeleton */}
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+                {/* Amount skeleton */}
+                <div className="flex justify-between mt-1">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+              </div>
+            ))
+          : // ─── Real Cards ───────────────────────────────────────
+            campaigns.map((campaign) => (
+              <CampaignCard
+                key={campaign._id}
+                id={campaign._id}
+                image={campaign.media[0]?.url || "/images/allcompanigeImage.png"}
+                title={campaign.name}
+                description={campaign.description}
+                amount={campaign.totalRaised.toString()}
+                goalAmount={campaign.raiseGoal}
+              />
+            ))}
       </div>
     </div>
   );

@@ -3,6 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import React from "react";
+import cardImage1 from "@../../../public/images/cardImage1.png";
+import cardImage2 from "@../../../public/images/cardImage2.png";
+import cardIamge3 from "@../../../public/images/cardImage3.png";
 
 function OverViewCard() {
   const session = useSession();
@@ -73,7 +76,7 @@ function OverViewCard() {
             </div>
             <div className="w-14 h-14 relative">
               <Image
-                src="/images/cardImage1.png"
+                src={cardImage1}
                 alt="Total Donation"
                 fill
                 className="object-contain"
@@ -93,7 +96,7 @@ function OverViewCard() {
             </div>
             <div className="w-14 h-14 relative">
               <Image
-                src="/images/cardImage2.png"
+                src={cardImage2}
                 alt="Total Campaigns"
                 fill
                 className="object-contain"
@@ -113,7 +116,7 @@ function OverViewCard() {
             </div>
             <div className="w-14 h-14 relative">
               <Image
-                src="/images/cardImage3.png"
+                src={cardIamge3}
                 alt="Total Donors"
                 fill
                 className="object-contain"

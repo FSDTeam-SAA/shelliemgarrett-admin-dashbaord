@@ -123,7 +123,7 @@ export default function AddCampaign() {
       const formData = new FormData();
       formData.append("name", campaignName.trim());
       formData.append("description", description.trim());
-      formData.append("raised_goals", raisedGoals);
+      formData.append("raiseGoal", raisedGoals);
 
       if (studentFile) {
         formData.append("studentFile", studentFile);
